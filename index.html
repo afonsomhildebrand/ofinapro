@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OficinaPro - Controle de Oficina</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">OP</span>
+        <div>
+          <strong>OficinaPro</strong>
+          <small>Gestao completa</small>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navegacao principal">
+        <button class="nav-item active" data-view="dashboard">Painel</button>
+        <button class="nav-item" data-view="clientes">Clientes</button>
+        <button class="nav-item" data-view="carros">Carros</button>
+        <button class="nav-item" data-view="funcionarios">Funcionarios</button>
+        <button class="nav-item" data-view="pecas">Pecas</button>
+        <button class="nav-item" data-view="servicos">Servicos</button>
+        <button class="nav-item" data-view="ordens">Ordens</button>
+      </nav>
+    </aside>
+
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Painel</h1>
+          <p id="viewSubtitle">Resumo financeiro, tempos medios e fluxo da oficina.</p>
+        </div>
+        <button id="seedButton" class="secondary-button" type="button">Repor dados exemplo</button>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="metrics">
+          <article class="metric">
+            <span>Faturamento</span>
+            <strong id="metricRevenue">R$ 0,00</strong>
+          </article>
+          <article class="metric">
+            <span>Custo em pecas</span>
+            <strong id="metricPartsCost">R$ 0,00</strong>
+          </article>
+          <article class="metric">
+            <span>Lucro estimado</span>
+            <strong id="metricProfit">R$ 0,00</strong>
+          </article>
+          <article class="metric">
+            <span>Tempo medio</span>
+            <strong id="metricAverageTime">0h</strong>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Media por servico</h2>
+              <span>Valor, custo e tempo</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Servico</th>
+                    <th>Qtd</th>
+                    <th>Media cobrada</th>
+                    <th>Tempo medio</th>
+                    <th>Lucro medio</th>
+                  </tr>
+                </thead>
+                <tbody id="serviceAverages"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Servicos por funcionario</h2>
+              <span>Produtividade da equipe</span>
+            </div>
+            <div id="employeeStats" class="stat-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="clientes" class="view">
+        <form id="clientForm" class="form-grid">
+          <input type="hidden" name="id">
+          <label>Nome<input name="name" required placeholder="Nome completo"></label>
+          <label>Telefone<input name="phone" required placeholder="(00) 00000-0000"></label>
+          <label>Email<input name="email" type="email" placeholder="cliente@email.com"></label>
+          <label>Documento<input name="document" placeholder="CPF/CNPJ"></label>
+          <button type="submit" class="primary-button">Salvar cliente</button>
+        </form>
+        <div id="clientsList" class="cards-grid"></div>
+      </section>
+
+      <section id="carros" class="view">
+        <form id="carForm" class="form-grid">
+          <input type="hidden" name="id">
+          <label>Cliente<select name="clientId" required></select></label>
+          <label>Fabricante<input name="manufacturer" required placeholder="Toyota, Fiat, Chevrolet"></label>
+          <label>Modelo<input name="model" required placeholder="Corolla, Uno, Onix"></label>
+          <label>Ano<input name="year" required type="number" min="1950" max="2035" placeholder="2020"></label>
+          <label>Placa<input name="plate" required placeholder="ABC1D23"></label>
+          <label>Quilometragem<input name="mileage" type="number" min="0" placeholder="85000"></label>
+          <button type="submit" class="primary-button">Salvar carro</button>
+        </form>
+        <div id="carsList" class="cards-grid"></div>
+      </section>
+
+      <section id="funcionarios" class="view">
+        <form id="employeeForm" class="form-grid">
+          <input type="hidden" name="id">
+          <label>Nome<input name="name" required placeholder="Nome do funcionario"></label>
+          <label>Cargo<input name="role" required placeholder="Mecanico, eletricista"></label>
+          <label>Telefone<input name="phone" placeholder="Contato"></label>
+          <label>Custo hora<input name="hourlyCost" required type="number" min="0" step="0.01" placeholder="45.00"></label>
+          <button type="submit" class="primary-button">Salvar funcionario</button>
+        </form>
+        <div id="employeesList" class="cards-grid"></div>
+      </section>
+
+      <section id="pecas" class="view">
+        <form id="partForm" class="form-grid">
+          <input type="hidden" name="id">
+          <label>Nome<input name="name" required placeholder="Filtro de oleo"></label>
+          <label>Codigo<input name="sku" required placeholder="PEC-001"></label>
+          <label>Estoque<input name="stock" required type="number" min="0" placeholder="12"></label>
+          <label>Custo unitario<input name="cost" required type="number" min="0" step="0.01" placeholder="35.00"></label>
+          <label>Preco venda<input name="price" required type="number" min="0" step="0.01" placeholder="55.00"></label>
+          <button type="submit" class="primary-button">Salvar peca</button>
+        </form>
+        <div id="partsList" class="cards-grid"></div>
+      </section>
+
+      <section id="servicos" class="view">
+        <form id="serviceForm" class="form-grid">
+          <input type="hidden" name="id">
+          <label>Nome<input name="name" required placeholder="Troca de oleo"></label>
+          <label>Descricao<input name="description" placeholder="Detalhe do servico"></label>
+          <label>Preco padrao<input name="basePrice" required type="number" min="0" step="0.01" placeholder="180.00"></label>
+          <label>Tempo estimado (h)<input name="estimatedHours" required type="number" min="0" step="0.25" placeholder="1.5"></label>
+          <button type="submit" class="primary-button">Salvar servico</button>
+        </form>
+        <div id="servicesList" class="cards-grid"></div>
+      </section>
+
+      <section id="ordens" class="view">
+        <form id="orderForm" class="form-grid wide">
+          <input type="hidden" name="id">
+          <label>Cliente<select name="clientId" required></select></label>
+          <label>Carro<select name="carId" required></select></label>
+          <label>Servico<select name="serviceId" required></select></label>
+          <label>Funcionario<select name="employeeId" required></select></label>
+          <label>Status<select name="status" required>
+            <option>Aberta</option>
+            <option>Em andamento</option>
+            <option>Concluida</option>
+            <option>Cancelada</option>
+          </select></label>
+          <label>Horas gastas<input name="hoursSpent" required type="number" min="0" step="0.25" placeholder="2.0"></label>
+          <label>Valor cobrado<input name="chargedValue" required type="number" min="0" step="0.01" placeholder="250.00"></label>
+          <label>Pecas usadas<select name="partIds" multiple size="4"></select></label>
+          <button type="submit" class="primary-button">Salvar ordem</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Carro</th>
+                <th>Servico</th>
+                <th>Funcionario</th>
+                <th>Status</th>
+                <th>Tempo</th>
+                <th>Custo</th>
+                <th>Valor</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

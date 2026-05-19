@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% set title = "Clientes" %}
+{% set subtitle = "Cadastro de clientes e contatos." %}
+{% block content %}
+  <form class="form-grid" method="post" action="{{ url_for('edit_client', item_id=edit_item.id) if edit_item else url_for('clients') }}">
+    <label>Nome<input name="name" required value="{{ edit_item.name if edit_item else '' }}"></label>
+    <label>Telefone<input name="phone" required value="{{ edit_item.phone if edit_item else '' }}"></label>
+    <label>Email<input name="email" type="email" value="{{ edit_item.email if edit_item else '' }}"></label>
+    <label>Documento<input name="document" value="{{ edit_item.document if edit_item else '' }}"></label>
+    <button class="primary-button" type="submit">{{ "Atualizar" if edit_item else "Salvar" }}</button>
+    {% if edit_item %}<a class="secondary-button" href="{{ url_for('clients') }}">Cancelar</a>{% endif %}
+  </form>
+  <section class="cards">
+    {% for item in items %}
+      <article class="card">
+        <h2>{{ item.name }}</h2>
+        <p>{{ item.phone }}</p>
+        <p>{{ item.email or "Sem email" }}</p>
+        <small>{{ item.document or "Sem documento" }}</small>
+        <a class="secondary-button" href="{{ url_for('edit_client', item_id=item.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('delete', entity='clientes', item_id=item.id) }}">
+          <button class="danger-button" type="submit">Excluir</button>
+        </form>
+      </article>
+    {% else %}
+      <p class="empty">Nenhum cliente cadastrado.</p>
+    {% endfor %}
+  </section>
+{% endblock %}

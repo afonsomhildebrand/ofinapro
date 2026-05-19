@@ -1,0 +1,46 @@
+services:
+  app:
+    build: .
+    container_name: oficinapro_app
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: "troque-esta-chave-em-producao"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: oficinapro
+      MYSQL_PASSWORD: oficinapro123
+      MYSQL_DATABASE: oficina_pro
+      APP_HOST: 0.0.0.0
+      APP_PORT: 5000
+    ports:
+      - "${APP_HOST_PORT:-5000}:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: oficinapro_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: oficina_pro
+      MYSQL_USER: oficinapro
+      MYSQL_PASSWORD: oficinapro123
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql_data:

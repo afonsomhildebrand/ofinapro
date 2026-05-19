@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set title = "Carros" %}
+{% set subtitle = "Cadastro por cliente, fabricante, modelo e ano." %}
+{% block content %}
+  <form class="form-grid" method="post" action="{{ url_for('edit_car', item_id=edit_item.id) if edit_item else url_for('cars') }}">
+    <label>Cliente<select name="client_id" required>
+      {% for client in clients %}<option value="{{ client.id }}" {% if edit_item and edit_item.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>{% endfor %}
+    </select></label>
+    <label>Fabricante<select id="manufacturer-select" name="manufacturer_id" required>
+      {% for manufacturer in manufacturers %}<option value="{{ manufacturer.id }}" {% if edit_item and (edit_item.manufacturer_id == manufacturer.id or (not edit_item.manufacturer_id and edit_item.manufacturer == manufacturer.name)) %}selected{% endif %}>{{ manufacturer.name }}</option>{% endfor %}
+    </select></label>
+    <label>Modelo<select id="model-select" name="model_id" required>
+      {% for model in car_models %}
+        <option value="{{ model.id }}" data-manufacturer="{{ model.manufacturer_id }}" {% if edit_item and (edit_item.model_id == model.id or (edit_item.manufacturer == model.manufacturer.name and edit_item.model == model.name)) %}selected{% endif %}>{{ model.name }}</option>
+      {% endfor %}
+    </select></label>
+    <label>Ano<input name="year" type="number" required value="{{ edit_item.year if edit_item else '' }}"></label>
+    <label>Placa<input name="plate" required value="{{ edit_item.plate if edit_item else '' }}"></label>
+    <label>Quilometragem<input name="mileage" type="number" value="{{ edit_item.mileage if edit_item else 0 }}"></label>
+    <button class="primary-button" type="submit">{{ "Atualizar" if edit_item else "Salvar" }}</button>
+    {% if edit_item %}<a class="secondary-button" href="{{ url_for('cars') }}">Cancelar</a>{% endif %}
+  </form>
+  <section class="cards">
+    {% for item in items %}
+      <article class="card">
+        <h2>{{ item.manufacturer }} {{ item.model }}</h2>
+        <p>{{ item.year }} - {{ item.plate }}</p>
+        <p>{{ item.client.name }}</p>
+        <small>{{ item.mileage }} km</small>
+        <a class="secondary-button" href="{{ url_for('edit_car', item_id=item.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('delete', entity='carros', item_id=item.id) }}">
+          <button class="danger-button" type="submit">Excluir</button>
+        </form>
+      </article>
+    {% else %}
+      <p class="empty">Nenhum carro cadastrado.</p>
+    {% endfor %}
+  </section>
+  <script>
+    const manufacturerSelect = document.getElementById("manufacturer-select");
+    const modelSelect = document.getElementById("model-select");
+    function filterModels() {
+      const manufacturerId = manufacturerSelect.value;
+      let firstVisible = null;
+      Array.from(modelSelect.options).forEach((option) => {
+        const visible = option.dataset.manufacturer === manufacturerId;
+        option.hidden = !visible;
+        option.disabled = !visible;
+        if (visible && !firstVisible) firstVisible = option;
+      });
+      if (modelSelect.selectedOptions.length && modelSelect.selectedOptions[0].disabled && firstVisible) {
+        modelSelect.value = firstVisible.value;
+      }
+      if (!modelSelect.value && firstVisible) modelSelect.value = firstVisible.value;
+    }
+    manufacturerSelect.addEventListener("change", filterModels);
+    filterModels();
+  </script>
+{% endblock %}

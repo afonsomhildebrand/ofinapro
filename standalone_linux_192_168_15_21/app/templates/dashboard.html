@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% set title = "Painel" %}
+{% set subtitle = "Resumo financeiro, tempos medios e produtividade." %}
+{% block content %}
+  <section class="metrics">
+    <article><span>Faturamento</span><strong>{{ revenue|brl }}</strong></article>
+    <article><span>Custo em pecas</span><strong>{{ parts_cost|brl }}</strong></article>
+    <article><span>Lucro estimado</span><strong>{{ profit|brl }}</strong></article>
+    <article><span>Tempo medio</span><strong>{{ avg_time|hours }}</strong></article>
+  </section>
+
+  <section class="charts-grid">
+    {% for chart in charts %}
+      <article class="panel chart-panel">
+        <div class="chart-heading">
+          <h2>{{ chart.title }}</h2>
+          <strong>{{ chart.total }}</strong>
+        </div>
+        <div class="bar-chart" style="--chart-color: {{ chart.color }}">
+          {% for point in chart.points %}
+            <div class="chart-column">
+              <div class="chart-value">{{ point.value }}</div>
+              <div class="chart-track">
+                <span style="height: {{ point.height }}%"></span>
+              </div>
+              <small>{{ point.label }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <div class="grid two">
+    <section class="panel">
+      <h2>Media por servico</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Servico</th>
+            <th>Qtd</th>
+            <th>Media cobrada</th>
+            <th>Tempo medio</th>
+            <th>Lucro medio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in service_averages %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.count }}</td>
+              <td>{{ item.charged|brl }}</td>
+              <td>{{ item.time|hours }}</td>
+              <td>{{ item.profit|brl }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <h2>Servicos por funcionario</h2>
+      <div class="stack">
+        {% for item in employee_stats %}
+          <div class="stat">
+            <strong>{{ item.name }} <span>{{ item.count }} servicos</span></strong>
+            <small>{{ item.revenue|brl }} faturados</small>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="panel client-panel">
+    <h2>Atendimento a clientes</h2>
+    <div class="client-summary">
+      <article>
+        <span>Clientes cadastrados</span>
+        <strong>{{ total_clients }}</strong>
+      </article>
+      <article>
+        <span>Clientes unicos atendidos nos ultimos 6 meses</span>
+        <strong>{{ unique_clients_total }}</strong>
+      </article>
+    </div>
+  </section>
+{% endblock %}

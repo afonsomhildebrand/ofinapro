@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% set title = "Graficos" %}
+{% set subtitle = "Estatisticas mensais de servicos, carros e atendimento a clientes." %}
+{% block content %}
+  <section class="charts-grid">
+    {% for chart in charts %}
+      <article class="panel chart-panel">
+        <div class="chart-heading">
+          <h2>{{ chart.title }}</h2>
+          <strong>{{ chart.total }}</strong>
+        </div>
+        <div class="bar-chart" style="--chart-color: {{ chart.color }}">
+          {% for point in chart.points %}
+            <div class="chart-column">
+              <div class="chart-value">{{ point.value }}</div>
+              <div class="chart-track">
+                <span style="height: {{ point.height }}%"></span>
+              </div>
+              <small>{{ point.label }}</small>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="panel client-panel">
+    <h2>Atendimento a clientes</h2>
+    <div class="client-summary">
+      <article>
+        <span>Clientes cadastrados</span>
+        <strong>{{ total_clients }}</strong>
+      </article>
+      <article>
+        <span>Clientes unicos atendidos nos ultimos 6 meses</span>
+        <strong>{{ unique_clients_total }}</strong>
+      </article>
+    </div>
+  </section>
+{% endblock %}

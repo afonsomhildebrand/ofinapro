@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% set title = "Usuarios" %}
+{% set subtitle = "Cadastro, permissoes, tempo de uso e atividades." %}
+{% block content %}
+  <form class="form-grid wide" method="post" action="{{ url_for('edit_user', item_id=edit_item.id) if edit_item else url_for('users') }}">
+    <label>Nome<input name="name" required value="{{ edit_item.name if edit_item else '' }}"></label>
+    <label>Usuario<input name="username" required value="{{ edit_item.username if edit_item else '' }}"></label>
+    <label>Senha<input name="password" type="password" {% if not edit_item %}required{% endif %} placeholder="{{ 'Deixe em branco para manter' if edit_item else '' }}"></label>
+    <label>Perfil de acesso<select name="access_level" required>
+      {% for role in user_roles %}
+        <option value="{{ role.key }}" {% if (edit_item and edit_item.access_level == role.key) or (not edit_item and role.key == "employee") %}selected{% endif %}>{{ role.label }}</option>
+      {% endfor %}
+    </select></label>
+    <label class="check-label"><input name="is_active_user" type="checkbox" {% if not edit_item or edit_item.is_active_user %}checked{% endif %}> Ativo</label>
+
+    <section class="permission-panel">
+      <h2>Permissoes por menu</h2>
+      <p class="helper-text">Os perfis Administrador, Gerente e Funcionario aplicam permissoes padrao automaticamente. Use Personalizado para marcar permissoes manualmente.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Menu</th>
+            <th>Ver</th>
+            <th>Incluir</th>
+            <th>Editar</th>
+            <th>Excluir</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for menu in menu_items %}
+            {% set permission = edit_item.permission_for(menu.key) if edit_item else {} %}
+            <tr>
+            <td>{{ menu.label }}</td>
+              <td><input name="{{ menu.key }}_view" type="checkbox" {% if permission.can_view %}checked{% endif %}></td>
+              <td><input name="{{ menu.key }}_create" type="checkbox" {% if permission.can_create %}checked{% endif %}></td>
+              <td><input name="{{ menu.key }}_edit" type="checkbox" {% if permission.can_edit %}checked{% endif %}></td>
+              <td><input name="{{ menu.key }}_delete" type="checkbox" {% if permission.can_delete %}checked{% endif %}></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <button class="primary-button" type="submit">{{ "Atualizar" if edit_item else "Salvar" }}</button>
+    {% if edit_item %}<a class="secondary-button" href="{{ url_for('users') }}">Cancelar</a>{% endif %}
+  </form>
+
+  <section class="panel">
+    <h2>Usuarios cadastrados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Usuario</th>
+          <th>Perfil</th>
+          <th>Status</th>
+          <th>Tempo de uso</th>
+          <th>Atividades</th>
+          <th>Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          {% set summary = summaries[item.id] %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.username }}</td>
+            <td>{{ item.role_label }}</td>
+            <td>{{ "Ativo" if item.is_active_user else "Inativo" }}</td>
+            <td>{{ summary.total_seconds|duration }}<br><small>{{ summary.sessions }} sessoes</small></td>
+            <td>{{ summary.activities_count }} registros{% if summary.last_activity %}<br><small>Ultima: {{ summary.last_activity.strftime("%d/%m/%Y %H:%M") }}</small>{% endif %}</td>
+            <td>
+              <a class="secondary-button" href="{{ url_for('edit_user', item_id=item.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('delete', entity='usuarios', item_id=item.id) }}">
+                <button class="danger-button" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="empty">Nenhum usuario cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel client-panel">
+    <h2>Ultimas atividades</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Usuario</th>
+          <th>Menu</th>
+          <th>Acao</th>
+          <th>Caminho</th>
+          <th>Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activity in recent_activities %}
+          <tr>
+            <td>{{ activity.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+            <td>{{ activity.user.name }}</td>
+            <td>{{ activity.menu_key or "-" }}</td>
+            <td>{{ activity.action }}</td>
+            <td>{{ activity.path }}</td>
+            <td>{{ activity.details or "-" }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="empty">Nenhuma atividade registrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

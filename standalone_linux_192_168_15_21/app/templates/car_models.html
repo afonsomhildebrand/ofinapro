@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% set title = "Modelos" %}
+{% set subtitle = "Cadastro de modelos de carros vinculados aos fabricantes." %}
+{% block content %}
+  <form class="form-grid" method="post" action="{{ url_for('edit_car_model', item_id=edit_item.id) if edit_item else url_for('car_models') }}">
+    <label>Fabricante<select name="manufacturer_id" required>
+      {% for manufacturer in manufacturers %}
+        <option value="{{ manufacturer.id }}" {% if edit_item and edit_item.manufacturer_id == manufacturer.id %}selected{% endif %}>{{ manufacturer.name }}</option>
+      {% endfor %}
+    </select></label>
+    <label>Modelo<input name="name" required placeholder="Corolla, Onix, Gol" value="{{ edit_item.name if edit_item else '' }}"></label>
+    <button class="primary-button" type="submit">{{ "Atualizar" if edit_item else "Salvar" }}</button>
+    {% if edit_item %}<a class="secondary-button" href="{{ url_for('car_models') }}">Cancelar</a>{% endif %}
+  </form>
+  <section class="cards">
+    {% for item in items %}
+      <article class="card">
+        <h2>{{ item.name }}</h2>
+        <p>{{ item.manufacturer.name }}</p>
+        <small>Disponivel para cadastro de carros</small>
+        <a class="secondary-button" href="{{ url_for('edit_car_model', item_id=item.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('delete', entity='modelos', item_id=item.id) }}">
+          <button class="danger-button" type="submit">Excluir</button>
+        </form>
+      </article>
+    {% else %}
+      <p class="empty">Nenhum modelo cadastrado.</p>
+    {% endfor %}
+  </section>
+{% endblock %}

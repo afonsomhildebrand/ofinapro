@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - OficinaPro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  </head>
+  <body class="login-page">
+    <form class="login-card" method="post">
+      <span class="login-mark">OP</span>
+      <h1>OficinaPro</h1>
+      <p>Acesse o controle da oficina</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="message {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      <label>Usuario<input name="username" required autofocus></label>
+      <label>Senha<input name="password" type="password" required></label>
+      <button class="primary-button" type="submit">Entrar</button>
+    </form>
+  </body>
+</html>
