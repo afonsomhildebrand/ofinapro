@@ -39,6 +39,8 @@
           <th>Tempo</th>
           <th>Custo</th>
           <th>Valor</th>
+          <th>Fiscal</th>
+          <th>Pagamento</th>
           <th></th>
         </tr>
       </thead>
@@ -54,6 +56,18 @@
             <td>{{ item.total_cost|brl }}</td>
             <td>{{ item.charged_value|brl }}</td>
             <td>
+              {% if item.invoice %}
+                {{ item.invoice.number }}<br><small>{{ item.invoice.status }}</small>
+              {% elif item.status == "Concluida" %}
+                <form method="post" action="{{ url_for('issue_invoice', order_id=item.id) }}">
+                  <button class="secondary-button" type="submit">Emitir nota</button>
+                </form>
+              {% else %}
+                <small>Aguardando conclusao</small>
+              {% endif %}
+            </td>
+            <td>{{ item.payment_status }}<br><small>Aberto {{ item.open_balance|brl }}</small></td>
+            <td>
               <a class="secondary-button" href="{{ url_for('edit_order', item_id=item.id) }}">Editar</a>
               <form method="post" action="{{ url_for('delete', entity='ordens', item_id=item.id) }}">
                 <button class="danger-button" type="submit">Excluir</button>
@@ -61,7 +75,7 @@
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="9" class="empty">Nenhuma ordem cadastrada.</td></tr>
+          <tr><td colspan="11" class="empty">Nenhuma ordem cadastrada.</td></tr>
         {% endfor %}
       </tbody>
     </table>

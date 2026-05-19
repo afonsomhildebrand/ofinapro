@@ -247,6 +247,11 @@ Tabela intermediaria para relacionamento muitos-para-muitos entre ordens e pecas
 | `/` | GET | Painel gerencial |
 | `/graficos` | GET | Graficos mensais |
 | `/usuarios` | GET/POST | Listar e cadastrar usuarios |
+| `/financeiro` | GET | Painel financeiro, notas e cobrancas |
+| `/ordens/<id>/emitir-nota` | POST | Registrar nota fiscal interna de ordem concluida |
+| `/ordens/<id>/pagamentos` | POST | Gerar cobranca Pix, boleto, debito ou credito |
+| `/pagamentos/<id>/baixar` | POST | Baixar pagamento como pago |
+| `/notas/<id>/cancelar` | POST | Cancelar nota fiscal no controle interno |
 | `/clientes` | GET/POST | Listar e cadastrar clientes |
 | `/fabricantes` | GET/POST | Listar e cadastrar fabricantes |
 | `/modelos` | GET/POST | Listar e cadastrar modelos por fabricante |

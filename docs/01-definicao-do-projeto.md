@@ -20,6 +20,8 @@ O OficinaPro e um sistema web para controle de oficina mecanica, voltado para us
 - Exibir graficos mensais de servicos, carros cadastrados e atendimento a clientes.
 - Permitir acesso por login em ambiente web interno.
 - Gerenciar usuarios com niveis de acesso por item de menu.
+- Registrar notas fiscais internas para servicos concluidos.
+- Gerar e acompanhar cobrancas por Pix, boleto, debito e credito.
 - Controlar direitos de visualizacao, inclusao, edicao e exclusao.
 - Registrar tempo de uso e atividades executadas por usuario.
 - Disponibilizar execucao por Docker e pacote standalone com executavel Windows para uso em um unico computador.
@@ -156,6 +158,7 @@ Os status previstos sao:
 - Controle de baixa automatica de estoque.
 - Impressao de ordem de servico.
 - Relatorios por periodo.
-- Controle de pagamentos.
+- Controle de pagamentos por Pix, boleto, debito e credito, com baixa manual.
+- Emissao de notas fiscais internas para ordens concluidas, pronta para futura integracao com prefeitura/provedor fiscal.
 - Backup automatico do banco.
 - Historico completo por veiculo.

@@ -20,6 +20,7 @@ login_manager.login_message = "Faca login para acessar o sistema."
 MENU_ITEMS = [
     {"key": "dashboard", "label": "Painel", "endpoint": "dashboard"},
     {"key": "charts", "label": "Graficos", "endpoint": "charts"},
+    {"key": "billing", "label": "Financeiro", "endpoint": "billing"},
     {"key": "clients", "label": "Clientes", "endpoint": "clients", "group": "Cadastros"},
     {"key": "manufacturers", "label": "Fabricantes", "endpoint": "manufacturers", "group": "Cadastros"},
     {"key": "car_models", "label": "Modelos", "endpoint": "car_models", "group": "Cadastros"},
@@ -43,6 +44,11 @@ ROLE_LABELS = {role["key"]: role["label"] for role in USER_ROLES}
 ENDPOINT_MENU = {
     "dashboard": "dashboard",
     "charts": "charts",
+    "billing": "billing",
+    "issue_invoice": "billing",
+    "cancel_invoice": "billing",
+    "create_payment": "billing",
+    "mark_payment_paid": "billing",
     "clients": "clients",
     "edit_client": "clients",
     "manufacturers": "manufacturers",
@@ -281,6 +287,8 @@ class ServiceOrder(db.Model):
     service = db.relationship("Service", back_populates="orders")
     employee = db.relationship("Employee", back_populates="orders")
     parts = db.relationship("Part", secondary=order_parts, lazy="joined")
+    invoice = db.relationship("Invoice", back_populates="order", uselist=False, cascade="all, delete-orphan")
+    payments = db.relationship("Payment", back_populates="order", cascade="all, delete-orphan")
 
     @property
     def parts_cost(self):
@@ -297,6 +305,57 @@ class ServiceOrder(db.Model):
     @property
     def profit(self):
         return money_value(self.charged_value) - self.total_cost
+
+    @property
+    def paid_amount(self):
+        return sum((money_value(payment.amount) for payment in self.payments if payment.status == "Pago"), Decimal("0"))
+
+    @property
+    def open_balance(self):
+        balance = money_value(self.charged_value) - self.paid_amount
+        return balance if balance > 0 else Decimal("0")
+
+    @property
+    def payment_status(self):
+        if self.open_balance <= 0 and money_value(self.charged_value) > 0:
+            return "Pago"
+        if self.paid_amount > 0:
+            return "Parcial"
+        return "Pendente"
+
+
+class Invoice(db.Model):
+    __tablename__ = "invoices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("service_orders.id"), nullable=False, unique=True)
+    number = db.Column(db.String(40), nullable=False, unique=True)
+    status = db.Column(db.String(40), default="Emitida", nullable=False)
+    service_description = db.Column(db.String(255), nullable=False)
+    customer_name = db.Column(db.String(160), nullable=False)
+    customer_document = db.Column(db.String(40))
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    tax_amount = db.Column(db.Numeric(10, 2), default=0, nullable=False)
+    notes = db.Column(db.String(255))
+    issued_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    canceled_at = db.Column(db.DateTime)
+    order = db.relationship("ServiceOrder", back_populates="invoice")
+
+
+class Payment(db.Model):
+    __tablename__ = "payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("service_orders.id"), nullable=False)
+    method = db.Column(db.String(30), nullable=False)
+    status = db.Column(db.String(30), default="Pendente", nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    due_date = db.Column(db.Date)
+    paid_at = db.Column(db.DateTime)
+    charge_code = db.Column(db.String(80), nullable=False, unique=True)
+    notes = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    order = db.relationship("ServiceOrder", back_populates="payments")
 
 
 @login_manager.user_loader
@@ -348,6 +407,10 @@ def register_filters(app):
 def action_for_request(endpoint):
     if endpoint == "delete":
         return "can_delete"
+    if endpoint in ("cancel_invoice", "mark_payment_paid"):
+        return "can_edit"
+    if endpoint in ("issue_invoice", "create_payment"):
+        return "can_create"
     if endpoint and endpoint.startswith("edit_"):
         return "can_edit"
     if request.method == "POST":
@@ -539,17 +602,25 @@ def seed_reference_data():
 
 
 def ensure_admin_permissions():
-    for user in User.query.filter_by(is_admin=True).all():
-        user.access_level = "admin"
+    for user in User.query.all():
+        if user.is_admin:
+            user.access_level = "admin"
+        defaults = role_permissions(user.access_level)
         for item in MENU_ITEMS:
             permission = UserPermission.query.filter_by(user_id=user.id, menu_key=item["key"]).first()
             if not permission:
                 permission = UserPermission(user_id=user.id, menu_key=item["key"])
                 db.session.add(permission)
-            permission.can_view = True
-            permission.can_create = True
-            permission.can_edit = True
-            permission.can_delete = True
+                default = defaults[item["key"]]
+                permission.can_view = default["can_view"]
+                permission.can_create = default["can_create"]
+                permission.can_edit = default["can_edit"]
+                permission.can_delete = default["can_delete"]
+            if user.is_admin:
+                permission.can_view = True
+                permission.can_create = True
+                permission.can_edit = True
+                permission.can_delete = True
 
 
 def role_permissions(access_level):
@@ -680,6 +751,26 @@ def build_monthly_statistics():
     }
 
 
+def parse_due_date(value):
+    if not value:
+        return None
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def generate_invoice_number(order):
+    return f"NF-{datetime.utcnow().strftime('%Y%m%d')}-{order.id:05d}"
+
+
+def generate_charge_code(order, method):
+    prefix = {
+        "Pix": "PIX",
+        "Boleto": "BOL",
+        "Debito": "DEB",
+        "Credito": "CRE",
+    }.get(method, "COB")
+    return f"{prefix}-{order.id:05d}-{datetime.utcnow().strftime('%H%M%S')}"
+
+
 def register_routes(app):
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -760,6 +851,96 @@ def register_routes(app):
     @login_required
     def charts():
         return render_template("charts.html", **build_monthly_statistics())
+
+    @app.route("/financeiro")
+    @login_required
+    def billing():
+        completed_orders = ServiceOrder.query.filter_by(status="Concluida").order_by(ServiceOrder.id.desc()).all()
+        payments = Payment.query.order_by(Payment.created_at.desc()).all()
+        invoices = Invoice.query.order_by(Invoice.issued_at.desc()).all()
+        total_completed = sum((money_value(order.charged_value) for order in completed_orders), Decimal("0"))
+        total_paid = sum((money_value(payment.amount) for payment in payments if payment.status == "Pago"), Decimal("0"))
+        total_open = sum((order.open_balance for order in completed_orders), Decimal("0"))
+        return render_template(
+            "billing.html",
+            completed_orders=completed_orders,
+            payments=payments,
+            invoices=invoices,
+            payment_methods=["Pix", "Boleto", "Debito", "Credito"],
+            total_completed=total_completed,
+            total_paid=total_paid,
+            total_open=total_open,
+        )
+
+    @app.post("/ordens/<int:order_id>/emitir-nota")
+    @login_required
+    def issue_invoice(order_id):
+        order = db.get_or_404(ServiceOrder, order_id)
+        if order.status != "Concluida":
+            flash("A nota fiscal so pode ser emitida para servicos concluidos.", "error")
+            return redirect(request.referrer or url_for("billing"))
+        if order.invoice:
+            flash("Esta ordem ja possui nota fiscal.", "error")
+            return redirect(request.referrer or url_for("billing"))
+        invoice = Invoice(
+            order_id=order.id,
+            number=generate_invoice_number(order),
+            service_description=f"{order.service.name} - {order.car.manufacturer} {order.car.model}",
+            customer_name=order.client.name,
+            customer_document=order.client.document,
+            amount=order.charged_value,
+            tax_amount=money_value(order.charged_value) * Decimal("0.05"),
+            notes="Controle interno para integracao fiscal externa.",
+        )
+        db.session.add(invoice)
+        db.session.commit()
+        flash("Nota fiscal registrada para a ordem concluida.", "success")
+        return redirect(request.referrer or url_for("billing"))
+
+    @app.post("/ordens/<int:order_id>/pagamentos")
+    @login_required
+    def create_payment(order_id):
+        order = db.get_or_404(ServiceOrder, order_id)
+        if order.status != "Concluida":
+            flash("Cobrancas so podem ser geradas para servicos concluidos.", "error")
+            return redirect(request.referrer or url_for("billing"))
+        method = request.form["method"]
+        amount = money_value(request.form.get("amount") or order.open_balance)
+        if amount <= 0:
+            flash("Informe um valor de cobranca maior que zero.", "error")
+            return redirect(request.referrer or url_for("billing"))
+        payment = Payment(
+            order_id=order.id,
+            method=method,
+            amount=amount,
+            due_date=parse_due_date(request.form.get("due_date")),
+            charge_code=generate_charge_code(order, method),
+            notes=request.form.get("notes"),
+        )
+        db.session.add(payment)
+        db.session.commit()
+        flash("Cobranca gerada.", "success")
+        return redirect(request.referrer or url_for("billing"))
+
+    @app.post("/pagamentos/<int:payment_id>/baixar")
+    @login_required
+    def mark_payment_paid(payment_id):
+        payment = db.get_or_404(Payment, payment_id)
+        payment.status = "Pago"
+        payment.paid_at = datetime.utcnow()
+        db.session.commit()
+        flash("Pagamento baixado como pago.", "success")
+        return redirect(request.referrer or url_for("billing"))
+
+    @app.post("/notas/<int:invoice_id>/cancelar")
+    @login_required
+    def cancel_invoice(invoice_id):
+        invoice = db.get_or_404(Invoice, invoice_id)
+        invoice.status = "Cancelada"
+        invoice.canceled_at = datetime.utcnow()
+        db.session.commit()
+        flash("Nota fiscal cancelada no controle interno.", "success")
+        return redirect(request.referrer or url_for("billing"))
 
     register_crud_routes(app)
 

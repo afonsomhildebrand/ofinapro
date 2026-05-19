@@ -7,6 +7,19 @@ $startedAt = Get-Date
 $steps = New-Object System.Collections.Generic.List[object]
 $status = "PASS"
 $errorMessage = ""
+$envPath = Join-Path (Get-Location) ".env"
+$appHostPort = "5000"
+$mysqlHostPort = "3307"
+if (Test-Path $envPath) {
+  foreach ($line in Get-Content $envPath) {
+    if ($line -match "^APP_HOST_PORT=(.+)$") {
+      $appHostPort = $Matches[1].Trim()
+    }
+    if ($line -match "^MYSQL_HOST_PORT=(.+)$") {
+      $mysqlHostPort = $Matches[1].Trim()
+    }
+  }
+}
 
 function Add-Step {
   param(
@@ -36,13 +49,13 @@ $psText = docker compose ps | Out-String
 if ($psText -notmatch "oficinapro_app" -or $psText -notmatch "oficinapro_mysql") {
   throw "Expected containers were not found"
 }
-if ($psText -notmatch "3307->3306") {
-  throw "MySQL is not exposed on host port 3307"
+if ($psText -notmatch "$mysqlHostPort->3306") {
+  throw "MySQL is not exposed on host port $mysqlHostPort"
 }
 Add-Step "container status" "PASS" $psText.Trim()
 
 Write-Host "Testing HTTP endpoints"
-$baseUrl = "http://127.0.0.1:5000"
+$baseUrl = "http://127.0.0.1:$appHostPort"
 for ($attempt = 1; $attempt -le 30; $attempt++) {
   try {
     $loginPage = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/login" -TimeoutSec 5
@@ -76,9 +89,15 @@ if ($usersPage.StatusCode -ne 200 -or -not $usersPage.Content.Contains("Permisso
 }
 Add-Step "GET /usuarios" "PASS" "Status HTTP: $($usersPage.StatusCode); permissoes renderizadas."
 
+$billingPage = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/financeiro" -WebSession $session -TimeoutSec 20
+if ($billingPage.StatusCode -ne 200 -or -not $billingPage.Content.Contains("Notas fiscais")) {
+  throw "Billing page did not render correctly"
+}
+Add-Step "GET /financeiro" "PASS" "Status HTTP: $($billingPage.StatusCode); financeiro renderizado."
+
 Write-Host "Testing MySQL tables"
 $tables = docker exec oficinapro_mysql mysql -uoficinapro -poficinapro123 -e "SHOW TABLES;" oficina_pro | Out-String
-foreach ($table in @("users", "user_permissions", "user_sessions", "activity_logs", "clients", "cars", "car_models", "employees", "manufacturers", "parts", "services", "service_orders", "order_parts")) {
+foreach ($table in @("users", "user_permissions", "user_sessions", "activity_logs", "clients", "cars", "car_models", "employees", "manufacturers", "parts", "services", "service_orders", "order_parts", "invoices", "payments")) {
   if ($tables -notmatch $table) {
     throw "Missing table: $table"
   }

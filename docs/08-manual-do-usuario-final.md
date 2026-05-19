@@ -82,6 +82,18 @@ Use essa tela para visualizar movimento, volume de servicos e atendimento ao lon
 
 Somente administradores podem acessar o cadastro de usuarios do sistema.
 
+## Financeiro
+
+Use a aba Financeiro para emitir notas fiscais internas de servicos concluidos e controlar pagamentos por Pix, boleto, debito e credito.
+
+1. Conclua a ordem de servico.
+2. Acesse Financeiro.
+3. Clique em Emitir nota para registrar a nota interna.
+4. Gere a cobranca escolhendo Pix, Boleto, Debito ou Credito.
+5. Quando o pagamento for recebido, clique em Baixar.
+
+As notas e cobrancas sao registros internos do OficinaPro. Para emissao oficial, integre o sistema com provedor fiscal, prefeitura, banco ou gateway de pagamento.
+
 Perfis padrao:
 
 - Administrador: acessa todos os menus e acoes.

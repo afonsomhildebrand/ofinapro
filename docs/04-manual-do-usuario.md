@@ -86,6 +86,16 @@ Use essa tela para acompanhar volume de trabalho e movimento da oficina por mes.
 
 O cadastro de usuarios do sistema fica dentro de Cadastros e so pode ser acessado por administradores.
 
+## 7. Financeiro
+
+Acesse Financeiro para consultar servicos concluidos, emitir a nota fiscal interna da ordem e gerar cobrancas por Pix, boleto, debito ou credito.
+
+Para emitir uma nota, a ordem precisa estar com status Concluida. Clique em Emitir nota na linha da ordem. O sistema cria um numero interno e registra cliente, documento, servico, valor e imposto estimado.
+
+Para gerar cobranca, escolha o metodo de pagamento, confirme o valor e informe vencimento quando necessario. A cobranca fica pendente ate ser baixada em Pagamentos.
+
+As notas e cobrancas sao controles internos. A emissao oficial fiscal ou bancaria exige integracao com prefeitura, banco ou gateway.
+
 Perfis padrao:
 
 - Administrador: acessa todos os menus e acoes.

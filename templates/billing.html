@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% set title = "Financeiro" %}
+{% set subtitle = "Notas fiscais internas, cobrancas e pagamentos de servicos concluidos." %}
+{% block content %}
+  <section class="metrics">
+    <article>
+      <span>Servicos concluidos</span>
+      <strong>{{ total_completed|brl }}</strong>
+    </article>
+    <article>
+      <span>Recebido</span>
+      <strong>{{ total_paid|brl }}</strong>
+    </article>
+    <article>
+      <span>Em aberto</span>
+      <strong>{{ total_open|brl }}</strong>
+    </article>
+    <article>
+      <span>Notas emitidas</span>
+      <strong>{{ invoices|length }}</strong>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>Servicos concluidos</h2>
+    <p class="helper-text">A emissao fiscal e as cobrancas registradas aqui sao controles internos prontos para integracao com prefeitura, banco ou provedor de pagamento.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Ordem</th>
+          <th>Cliente</th>
+          <th>Servico</th>
+          <th>Valor</th>
+          <th>Nota fiscal</th>
+          <th>Pagamento</th>
+          <th>Cobranca</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in completed_orders %}
+          <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.client.name }}<br><small>{{ order.client.document or "Sem documento" }}</small></td>
+            <td>{{ order.service.name }}<br><small>{{ order.car.manufacturer }} {{ order.car.model }} - {{ order.car.plate }}</small></td>
+            <td>{{ order.charged_value|brl }}</td>
+            <td>
+              {% if order.invoice %}
+                <strong>{{ order.invoice.number }}</strong><br>
+                <small>{{ order.invoice.status }}</small>
+              {% else %}
+                <form method="post" action="{{ url_for('issue_invoice', order_id=order.id) }}">
+                  <button class="secondary-button" type="submit">Emitir nota</button>
+                </form>
+              {% endif %}
+            </td>
+            <td>
+              {{ order.payment_status }}<br>
+              <small>Pago {{ order.paid_amount|brl }} | Aberto {{ order.open_balance|brl }}</small>
+            </td>
+            <td>
+              <form class="inline-form" method="post" action="{{ url_for('create_payment', order_id=order.id) }}">
+                <select name="method" required>
+                  {% for method in payment_methods %}<option>{{ method }}</option>{% endfor %}
+                </select>
+                <input name="amount" type="number" step="0.01" min="0.01" value="{{ '%.2f'|format(order.open_balance or order.charged_value) }}" required>
+                <input name="due_date" type="date">
+                <button class="primary-button" type="submit">Gerar</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="empty">Nenhum servico concluido para faturar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="grid two billing-grid">
+    <div class="panel">
+      <h2>Pagamentos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Metodo</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+            <tr>
+              <td>{{ payment.charge_code }}<br><small>Ordem #{{ payment.order_id }}</small></td>
+              <td>{{ payment.method }}</td>
+              <td>{{ payment.amount|brl }}</td>
+              <td>{{ payment.status }}</td>
+              <td>
+                {% if payment.status != "Pago" %}
+                  <form method="post" action="{{ url_for('mark_payment_paid', payment_id=payment.id) }}">
+                    <button class="secondary-button" type="submit">Baixar</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="empty">Nenhuma cobranca gerada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Notas fiscais</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Numero</th>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in invoices %}
+            <tr>
+              <td>{{ invoice.number }}<br><small>Ordem #{{ invoice.order_id }}</small></td>
+              <td>{{ invoice.customer_name }}</td>
+              <td>{{ invoice.amount|brl }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>
+                {% if invoice.status != "Cancelada" %}
+                  <form method="post" action="{{ url_for('cancel_invoice', invoice_id=invoice.id) }}">
+                    <button class="danger-button" type="submit">Cancelar</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="empty">Nenhuma nota emitida.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

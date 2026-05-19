@@ -21,7 +21,7 @@ curl -fsS "http://127.0.0.1:${APP_PORT}/login" >/dev/null
 
 echo "Testando MySQL..."
 TABLES="$(docker exec oficinapro_linux_mysql mysql -u"${MYSQL_USER:-oficinapro}" -p"${MYSQL_PASSWORD:-oficinapro123}" -e "SHOW TABLES;" "${MYSQL_DATABASE:-oficina_pro}")"
-for table in users user_permissions user_sessions activity_logs clients cars car_models employees manufacturers parts services service_orders order_parts; do
+for table in users user_permissions user_sessions activity_logs clients cars car_models employees manufacturers parts services service_orders order_parts invoices payments; do
   echo "$TABLES" | grep -q "$table"
 done
 

@@ -1,7 +1,7 @@
 import unittest
 
 from test_helpers import login, make_test_app
-from app import ActivityLog, Car, CarModel, Client, Employee, Manufacturer, Part, Service, ServiceOrder, UserSession, db
+from app import ActivityLog, Car, CarModel, Client, Employee, Invoice, Manufacturer, Part, Payment, Service, ServiceOrder, UserSession, db
 
 
 class ImplementationAppTests(unittest.TestCase):
@@ -23,14 +23,17 @@ class ImplementationAppTests(unittest.TestCase):
         dashboard = self.client.get("/")
         charts = self.client.get("/graficos")
         users = self.client.get("/usuarios")
+        billing = self.client.get("/financeiro")
 
         self.assertEqual(dashboard.status_code, 200)
         self.assertEqual(charts.status_code, 200)
         self.assertEqual(users.status_code, 200)
+        self.assertEqual(billing.status_code, 200)
         self.assertIn(b"Servicos por mes", dashboard.data)
         self.assertIn(b"Carros cadastrados por mes", charts.data)
         self.assertIn(b"Atendimentos a clientes", charts.data)
         self.assertIn(b"Permissoes por menu", users.data)
+        self.assertIn(b"Notas fiscais", billing.data)
 
     def test_user_permission_restricts_menu_access(self):
         login(self.client)
@@ -86,6 +89,7 @@ class ImplementationAppTests(unittest.TestCase):
 
         self.assertEqual(self.client.get("/clientes").status_code, 200)
         self.assertEqual(self.client.get("/ordens").status_code, 200)
+        self.assertEqual(self.client.get("/financeiro").status_code, 200)
         self.assertEqual(self.client.get("/usuarios").status_code, 403)
 
     def test_session_and_activity_are_recorded(self):
@@ -192,6 +196,30 @@ class ImplementationAppTests(unittest.TestCase):
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Concluida", response.data)
+
+        response = self.client.post(f"/ordens/{order.id}/emitir-nota", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Nota fiscal registrada", response.data)
+
+        response = self.client.post(f"/ordens/{order.id}/pagamentos", data={
+            "method": "Pix",
+            "amount": "650.00",
+            "due_date": "2026-05-20",
+            "notes": "QA Pix",
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Cobranca gerada", response.data)
+
+        with self.app.app_context():
+            invoice = Invoice.query.filter_by(order_id=order.id).one()
+            payment = Payment.query.filter_by(order_id=order.id).one()
+            self.assertEqual(invoice.status, "Emitida")
+            self.assertEqual(payment.method, "Pix")
+            payment_id = payment.id
+
+        response = self.client.post(f"/pagamentos/{payment_id}/baixar", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Pagamento baixado", response.data)
 
 
 if __name__ == "__main__":

@@ -16,9 +16,13 @@ Sistema web em Python para controle de oficina mecanica com MySQL e login.
 - Pecas com estoque, custo e preco de venda
 - Servicos disponiveis
 - Ordens de servico com cliente, carro, servico, funcionario, pecas, custo, valor e tempo gasto
+- Financeiro com notas fiscais internas para servicos concluidos
+- Pagamentos por Pix, boleto, debito e credito, com baixa de cobrancas
 - Painel com faturamento, custo em pecas, lucro estimado, tempo medio, media por servico e servicos por funcionario
 - Graficos mensais de servicos, carros cadastrados e atendimento a clientes
 - Criacao, edicao e exclusao dos principais cadastros
+
+> Observacao: notas fiscais, boletos e cobrancas Pix sao registrados como controle interno. Para emissao fiscal ou bancaria oficial, conecte o sistema a um provedor de NFS-e/NF-e, banco ou gateway de pagamento.
 
 ## Preparar o MySQL
 

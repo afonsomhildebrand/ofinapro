@@ -5,6 +5,7 @@ from test_helpers import make_test_app
 from app import (
     Client,
     Employee,
+    Payment,
     Part,
     ServiceOrder,
     User,
@@ -60,6 +61,27 @@ class UnitAppTests(unittest.TestCase):
             self.assertEqual(order.total_cost, Decimal("140.00"))
             self.assertEqual(order.profit, Decimal("60.00"))
 
+    def test_service_order_payment_status(self):
+        app = make_test_app()
+        with app.app_context():
+            order = ServiceOrder(
+                client_id=1,
+                car_id=1,
+                service_id=1,
+                employee_id=1,
+                hours_spent=1,
+                charged_value=300,
+            )
+            db.session.add(order)
+            db.session.flush()
+            db.session.add(Payment(order_id=order.id, method="Pix", status="Pago", amount=120, charge_code="PIX-QA"))
+            db.session.commit()
+
+            saved_order = db.session.get(ServiceOrder, order.id)
+            self.assertEqual(saved_order.paid_amount, Decimal("120.00"))
+            self.assertEqual(saved_order.open_balance, Decimal("180.00"))
+            self.assertEqual(saved_order.payment_status, "Parcial")
+
     def test_user_permission_helpers(self):
         app = make_test_app()
         with app.app_context():
@@ -89,6 +111,7 @@ class UnitAppTests(unittest.TestCase):
             admin = User.query.filter_by(username="admin").one()
             self.assertTrue(admin.can("users", "can_view"))
             self.assertTrue(admin.can("orders", "can_delete"))
+            self.assertTrue(admin.can("billing", "can_create"))
 
     def test_user_session_duration_seconds(self):
         session = UserSession()

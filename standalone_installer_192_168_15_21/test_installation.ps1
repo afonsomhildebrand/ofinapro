@@ -28,7 +28,7 @@ if ($users.StatusCode -ne 200 -or -not $users.Content.Contains("Permissoes por m
 
 Write-Host "Testando MySQL..."
 $tables = docker exec oficinapro_standalone_mysql mysql -uoficinapro -poficinapro123 -e "SHOW TABLES;" oficina_pro | Out-String
-foreach ($table in @("users", "user_permissions", "user_sessions", "activity_logs", "clients", "cars", "car_models", "employees", "manufacturers", "parts", "services", "service_orders", "order_parts")) {
+foreach ($table in @("users", "user_permissions", "user_sessions", "activity_logs", "clients", "cars", "car_models", "employees", "manufacturers", "parts", "services", "service_orders", "order_parts", "invoices", "payments")) {
   if ($tables -notmatch $table) {
     throw "Tabela ausente: $table"
   }
